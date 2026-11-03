@@ -1,68 +1,87 @@
-# =====================================================================
-# HORIZON ENGINE V3: GRAVITATIONAL INDUCTION SOUND HORIZON INTEGRATION
-# =====================================================================
-import math
-import core_engine
+import numpy as np
 
-def calculate_plasma_sound_speed(z, omega_baryon=0.0493, omega_photon=5.4e-5):
-    """
-    FORMULA 4: Effective Plasma Sound Speed (cs).
-    Calculates the exact, redshift-dependent speed of sound waves 
-    propagating through the tightly coupled early-universe baryon-photon plasma.
-    """
-    c = 299792.458  # Speed of light constant represented in km/s
-    
-    # Standard Relativistic Correction: Includes the neutrino radiation background 
-    # multiplier (~1.681) to ensure unassailable early-universe accuracy.
-    omega_radiation = omega_photon * 1.68132
-    
-    # Calculate the baryon-to-photon momentum-density ratio R(z)
-    R_z = (3.0 * omega_baryon) / (4.0 * omega_radiation * (1.0 + z))
-    
-    # Relativistic plasma sound speed equation
-    # As z -> infinity, R_z -> 0, causing cs to hit the exact cosmic speed limit of c/sqrt(3)
-    cs_z = c / math.sqrt(3.0 * (1.0 + R_z))
-    return cs_z
+# =====================================================================
+# THE BUBBLED VACUUM FLUID ENGINE (v3.6.0 HYDRODYNAMIC)
+# =====================================================================
+class ZeroCosmologicalEngine:
+    def __init__(self, rho_max=1.0e5):
+        self.Omega_b = 0.0493     
+        self.Omega_gamma = 5.4e-5 
+        self.Omega_fluid_0 = 1.0 - (self.Omega_b + self.Omega_gamma)
+        self.rho_max = rho_max    
+        
+        # Emergent Root Parameters for the State-Transition Loop
+        self.alpha_0 = 0.0824     
+        self.chi_0 = 0.0015       
+        self.psi_0 = 0.0008       
+        
+    def calculate_ae_spring(self, rho_total):
+        if rho_total >= self.rho_max:
+            return 1.0
+        return min(max((rho_total / self.rho_max) ** 4, 0.0), 1.0)
 
-def integrate_comoving_sound_horizon(rho_max, H0_observed, induction_coupling, normalizing_amplitude, omega_baryon, omega_photon, omega_vacuum):
-    """
-    MATHEMATICALLY BALANCED: Executes the 2,000-step numerical integration
-    by normalizing the early-universe expansion scale to prevent velocity underflow.
-    """
-    z_drag = 1059.94      
-    z_max = 2500.0        
-    steps = 2000          
+    def compute_emergent_conditions(self, redshift):
+        xi_emergent = np.log(1.0 + redshift * (self.Omega_fluid_0 / self.rho_max))
+        alpha_dynamic = self.alpha_0 * (1.0 + xi_emergent)
+        chi_dynamic = self.chi_0 * (1.0 + xi_emergent)
+        psi_dynamic = self.psi_0 * (1.0 + xi_emergent)
+        return alpha_dynamic, chi_dynamic, psi_dynamic
+
+    def compute_normalized_densities(self, redshift):
+        alpha, chi, psi = self.compute_emergent_conditions(redshift)
+        rho_b = self.Omega_b * (1.0 + redshift) ** (3.0 - alpha)
+        rho_gamma = self.Omega_gamma * (1.0 + redshift) ** 4.0
+        
+        exponent = chi + psi
+        rho_fluid = self.Omega_fluid_0 * (1.0 + redshift) ** exponent
+        return rho_b, rho_gamma, rho_fluid
+
+    def compute_hubble_squared(self, redshift):
+        rho_b, rho_gamma, rho_fluid = self.compute_normalized_densities(redshift)
+        rho_total = rho_b + rho_gamma + rho_fluid
+        ae_spring = self.calculate_ae_spring(rho_total)
+        return max(rho_total * (1.0 - ae_spring), 0.0)
+
+
+class ZeroHorizonEngine:
+    def __init__(self, rho_max=1.0e5):
+        self.rho_max = rho_max
+        self.c2 = 1.0
+        self.gamma_steam_root = 0.0025   
+        self.eta_base_seal = 0.985  
+        
+    def calculate_bubble_physics(self, core_mass, rho_local):
+        """
+        Models the Event Horizon strictly as a compressed vacuum bubble skin.
+        Calculates surface tension pressure and net escaping steam.
+        """
+        # Surface tension scales non-linearly with the compression ratio
+        compression_ratio = rho_local / self.rho_max
+        sigma_bubble_tension = (compression_ratio) ** 4
+        
+        # The gravitational seal degrades if internal bubble pressure wins the battle
+        gravitational_seal = self.eta_base_seal * (1.0 - np.exp(-core_mass)) * (1.0 - sigma_bubble_tension * 0.01)
+        escape_fraction = 1.0 - max(min(gravitational_seal, 1.0), 0.0)
+        
+        # Boundary sound speed inside the bubble wall skin
+        cs_squared = self.c2 * (1.0 - sigma_bubble_tension)
+        return sigma_bubble_tension, escape_fraction, cs_squared
+
+
+if __name__ == "__main__":
+    core = ZeroCosmologicalEngine()
+    horizon = ZeroHorizonEngine()
     
-    dz = (z_max - z_drag) / steps
-    r_d_integral = 0.0
+    print("=== zÆro Framework v3.6.0 Bubble Horizon Validation ===")
     
-    # Speed of light converted to astronomical megaparsec scaling bounds
-    # to yield standard distance results (c / H0 units)
-    c_mpc = 299792.458 / H0_observed 
+    # Analyze a compressed vacuum bubble near its critical compaction threshold
+    test_mass = 4.5
+    test_rho = 0.92 * horizon.rho_max
     
-    for i in range(steps):
-        z = z_drag + (i * dz)
-        
-        # Scale cosmic components based on macro geometry
-        scaling_matter = omega_baryon * (1.0 + z)**3
-        scaling_photon = omega_photon * (1.0 + z)**4
-        scaling_vacuum_ground = omega_vacuum * (1.0 + z)**0
-        scaling_vacuum_induced = gauge_gravitational_vacuum_induction(z, omega_vacuum, H0_observed, induction_coupling)
-        
-        total_scaled_density = scaling_matter + scaling_photon + scaling_vacuum_ground + scaling_vacuum_induced
-        
-        # Calculate background scaling ratio E(z) directly
-        alpha_gauge = gauge_repulsive_spring_AE(total_scaled_density, rho_max)
-        E_z = math.sqrt(abs(total_scaled_density * (1.0 - alpha_gauge)))
-        
-        # Plasma sound speed relative to the speed of light
-        omega_radiation = omega_photon * 1.68132
-        R_z = (3.0 * omega_baryon) / (4.0 * omega_radiation * (1.0 + z))
-        cs_normalized = 1.0 / math.sqrt(3.0 * (1.0 + R_z))
-        
-        # Accumulate the comoving acoustic step
-        if E_z > 0:
-            r_d_integral += (cs_normalized / E_z) * dz
-            
-    # Scale through the fundamental Hubble distance metric to output Mpc units
-    return r_d_integral * c_mpc
+    tension, escape, cs2 = horizon.calculate_bubble_physics(core_mass=test_mass, rho_local=test_rho)
+    
+    print(f"\n--- Compressed Vacuum Bubble Analysis (92% Compaction) ---")
+    print(f" * Horizon Surface Tension Skin Metric (Σ_bubble): {tension:.4f}")
+    print(f" * Escaping Vacuum Steam Leakage Fraction:        {escape * 100:.3f}%")
+    print(f" * Substrate Sound Speed Inside Bubble Wall (c_s²): {cs2:.4f}")
+    print(f" * Structural Causality Safety Baseline:           {0.0 <= cs2 <= 1.0}")
