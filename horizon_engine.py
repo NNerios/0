@@ -1,87 +1,124 @@
 import numpy as np
 
 # =====================================================================
-# THE BUBBLED VACUUM FLUID ENGINE (v3.6.0 HYDRODYNAMIC)
+# THE UNIFIED LAYERED VACUUM COLOGICAL ENGINE (v3.7.0 COMPLETE)
 # =====================================================================
 class ZeroCosmologicalEngine:
     def __init__(self, rho_max=1.0e5):
+        """
+        Initializes the zÆro (Æ "0") Layered Substrate Engine v3.7.0.
+        Models the vacuum as interacting layers of varying insulation degrees.
+        """
+        # Satellite-Verified Reference Observables (Dimensionless Baselines at z=0)
         self.Omega_b = 0.0493     
         self.Omega_gamma = 5.4e-5 
         self.Omega_fluid_0 = 1.0 - (self.Omega_b + self.Omega_gamma)
         self.rho_max = rho_max    
         
-        # Emergent Root Parameters for the State-Transition Loop
-        self.alpha_0 = 0.0824     
-        self.chi_0 = 0.0015       
-        self.psi_0 = 0.0008       
+        # Root State Coefficients
+        self.alpha_0 = 0.1152     # Root Galactic Furnace momentum 
+        self.chi_0 = 0.0034       # Root Substrate Thermal Insulation 
+        self.psi_0 = 0.0012       # Root Escaping Hawking Steam 
+        
+        # 🌀 Multi-Layer Interaction Parameters
+        self.phi_shear = 0.0015   # Inter-layer horizon pushing & blending metric
+        self.lambda_root = 0.042  # Baseline layering differential scale
         
     def calculate_ae_spring(self, rho_total):
         if rho_total >= self.rho_max:
             return 1.0
         return min(max((rho_total / self.rho_max) ** 4, 0.0), 1.0)
 
-    def compute_emergent_conditions(self, redshift):
-        xi_emergent = np.log(1.0 + redshift * (self.Omega_fluid_0 / self.rho_max))
-        alpha_dynamic = self.alpha_0 * (1.0 + xi_emergent)
-        chi_dynamic = self.chi_0 * (1.0 + xi_emergent)
-        psi_dynamic = self.psi_0 * (1.0 + xi_emergent)
-        return alpha_dynamic, chi_dynamic, psi_dynamic
+    def compute_layered_conditions(self, redshift):
+        """
+        The Invisible Equation Layer.
+        Calculates the shifting states of nested vacuum insulation envelopes.
+        """
+        xi_macro = np.log(1.0 + redshift)
+        
+        alpha_dynamic = self.alpha_0 * (1.0 + xi_macro * 0.02)
+        chi_dynamic = self.chi_0 * (1.0 + xi_macro * 0.01)
+        psi_dynamic = self.psi_0 * (1.0 + xi_macro * 0.01)
+        
+        # Shifting differential between interacting vacuum layers across history
+        lambda_layer = self.lambda_root * (1.0 + xi_macro * 0.05)
+        
+        return alpha_dynamic, chi_dynamic, psi_dynamic, lambda_layer
 
     def compute_normalized_densities(self, redshift):
-        alpha, chi, psi = self.compute_emergent_conditions(redshift)
+        alpha, chi, psi, lambda_layer = self.compute_layered_conditions(redshift)
+        
         rho_b = self.Omega_b * (1.0 + redshift) ** (3.0 - alpha)
         rho_gamma = self.Omega_gamma * (1.0 + redshift) ** 4.0
         
+        # Base insulation modified by the mechanical pushing/blending of vacuum layers
+        layer_blending_modifier = 1.0 + self.phi_shear * np.log(1.0 + lambda_layer)
         exponent = chi + psi
-        rho_fluid = self.Omega_fluid_0 * (1.0 + redshift) ** exponent
+        rho_fluid = self.Omega_fluid_0 * (1.0 + redshift) ** exponent * layer_blending_modifier
+        
         return rho_b, rho_gamma, rho_fluid
 
     def compute_hubble_squared(self, redshift):
         rho_b, rho_gamma, rho_fluid = self.compute_normalized_densities(redshift)
         rho_total = rho_b + rho_gamma + rho_fluid
+        
         ae_spring = self.calculate_ae_spring(rho_total)
         return max(rho_total * (1.0 - ae_spring), 0.0)
-
 
 class ZeroHorizonEngine:
     def __init__(self, rho_max=1.0e5):
         self.rho_max = rho_max
         self.c2 = 1.0
-        self.gamma_steam_root = 0.0025   
-        self.eta_base_seal = 0.985  
         
-    def calculate_bubble_physics(self, core_mass, rho_local):
-        """
-        Models the Event Horizon strictly as a compressed vacuum bubble skin.
-        Calculates surface tension pressure and net escaping steam.
-        """
-        # Surface tension scales non-linearly with the compression ratio
+    def calculate_layered_boundary(self, rho_local):
+        """Monitors structural sound speed as layers press against the horizon bubble."""
         compression_ratio = rho_local / self.rho_max
         sigma_bubble_tension = (compression_ratio) ** 4
-        
-        # The gravitational seal degrades if internal bubble pressure wins the battle
-        gravitational_seal = self.eta_base_seal * (1.0 - np.exp(-core_mass)) * (1.0 - sigma_bubble_tension * 0.01)
-        escape_fraction = 1.0 - max(min(gravitational_seal, 1.0), 0.0)
-        
-        # Boundary sound speed inside the bubble wall skin
         cs_squared = self.c2 * (1.0 - sigma_bubble_tension)
-        return sigma_bubble_tension, escape_fraction, cs_squared
+        return sigma_bubble_tension, cs_squared
 
+class CERCPipeline:
+    def __init__(self, core_engine, horizon_engine):
+        self.engine = core_engine
+        self.horizon = horizon_engine
+        self.H0_calibration = 70.0  
+        
+        # 📊 32 Hard Observational Cosmic Chronometer Points
+        self.cc_data = np.array([
+,,,,
+,,,,
+,,,,
+,,,,
+,,,,
+,,,,
+,,,,
+,,,
+        ])
+
+    def execute_statistical_validation(self):
+        z_obs = self.cc_data[:, 0]
+        H_obs = self.cc_data[:, 1]
+        sigma_H = self.cc_data[:, 2]
+        
+        chi_squared = 0.0
+        for i in range(len(z_obs)):
+            h2_dim = self.engine.compute_hubble_squared(z_obs[i])
+            h_pred = np.sqrt(h2_dim) * self.H0_calibration
+            chi_squared += ((H_obs[i] - h_pred) / sigma_H[i]) ** 2
+            
+        return chi_squared, chi_squared / len(z_obs)
 
 if __name__ == "__main__":
     core = ZeroCosmologicalEngine()
     horizon = ZeroHorizonEngine()
+    pipeline = CERCPipeline(core, horizon)
     
-    print("=== zÆro Framework v3.6.0 Bubble Horizon Validation ===")
+    print("=== zÆro Fluid Framework v3.7.0 Layered Core Verification ===")
+    total_chi2, red_chi2 = pipeline.execute_statistical_validation()
+    print(f"Total Framework Chi-Squared (𝜒²): {total_chi2:.4f}")
+    print(f"Layered Performance Score (𝜒²/dof): {red_chi2:.4f}")
     
-    # Analyze a compressed vacuum bubble near its critical compaction threshold
-    test_mass = 4.5
-    test_rho = 0.92 * horizon.rho_max
-    
-    tension, escape, cs2 = horizon.calculate_bubble_physics(core_mass=test_mass, rho_local=test_rho)
-    
-    print(f"\n--- Compressed Vacuum Bubble Analysis (92% Compaction) ---")
-    print(f" * Horizon Surface Tension Skin Metric (Σ_bubble): {tension:.4f}")
-    print(f" * Escaping Vacuum Steam Leakage Fraction:        {escape * 100:.3f}%")
-    print(f" * Substrate Sound Speed Inside Bubble Wall (c_s²): {cs2:.4f}")
-    print(f" * Structural Causality Safety Baseline:           {0.0 <= cs2 <= 1.0}")
+    tension, cs2 = horizon.calculate_layered_boundary(0.92 * horizon.rho_max)
+    print(f"\n--- Inter-Layer Phase Boundary Analysis (92% Compaction) ---")
+    print(f" * Local Layered Skin Tension (Σ_bubble):   {tension:.4f}")
+    print(f" * Local Fluid Signal Sound Speed (c_s²):   {cs2:.4f} | Bounded: {0.0 <= cs2 <= 1.0}")
